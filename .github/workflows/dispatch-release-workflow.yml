@@ -1,0 +1,32 @@
+name: Release Build my website
+run-name: Release my website
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    name: Build and deploy blog
+    runs-on: ubuntu-latest
+    environment: main
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: install zola
+        uses: taiki-e/install-action@v2
+        with:
+          tool: zola@0.17
+
+      - name: build site
+        run: zola build
+
+      - name: Upload to CloudFlare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          projectName: ${{ secrets.CF_PROJECT_NAME }}
+          directory: public
