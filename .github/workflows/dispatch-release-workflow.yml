@@ -3,8 +3,8 @@ run-name: Release my website
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    tags:
+      - "release/*"
 jobs:
   deploy:
     name: Build and deploy blog
@@ -18,7 +18,7 @@ jobs:
       - name: install zola
         uses: taiki-e/install-action@v2
         with:
-          tool: zola@0.17
+          tool: zola@0.18
 
       - name: build site
         run: zola build
