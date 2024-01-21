@@ -39,3 +39,6 @@ dotnet-install -Channel LTS
 ```shell
 dotnet-install -Channel STS
 ```
+
+Be sure to add `$HOME/.dotnet` to your `$PATH`, and if you want to opt out of telemetry while you're editing your shell's 
+profile you might consider exporting a variable `export DOTNET_CLI_TELEMETRY_OPTOUT=1`
