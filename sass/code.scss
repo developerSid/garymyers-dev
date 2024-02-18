@@ -1,0 +1,17 @@
+pre.language-toml, pre.language-yaml, pre.language-bash, pre.language-xml {
+  padding: 5px;
+  position: relative;
+
+  span.icon {
+    content: url('/images/copy.svg');
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 24px; // Adjust as needed
+    height: 24px; // Adjust as needed
+    background-color: white;
+    border-radius: 5px;
+    margin: 5px;
+    cursor: pointer;
+  }
+}
