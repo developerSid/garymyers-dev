@@ -6,17 +6,55 @@ date = 2024-02-18
 I'm going to add some additional detail to using [Vector.dev](https://vector.dev) to post events to Elastic's Logging Solution using Vector's [Elasticsearch](https://vector.dev/docs/reference/configuration/sinks/elasticsearch/) sink.
 
 ## Some History
-We use [Elastic](https://www.elastic.co/) for our log aggregation.  I'm not exactly sure the reason and for the purposes of this blog post it doesn't really matter.  Only know that is what we use.  It was a decision made by some other part of the organization.  I don't even know if I would recommend anything other than Elastic because I haven't really looked into what is available in this problem space.  I don't want to take a position on Elastic being good or bad only that it's what we're using.
+We use [Elastic](https://www.elastic.co/) for our log aggregation.  I'm not exactly sure the reason and for the purposes of this blog post it doesn't really matter.  Only know that is what we use.  It was a decision made by some other part of the organization.  I don't even know if I would recommend anything other than Elastic because I haven't really looked into what is available in this problem space.  Basically I'm not an Elastic expert and I just do what I'm told.
 
 ## The Directive
 Logstash uses a lot of memory, and we'd like something smaller.  I have exactly zero experience with Logstash other than knowing it exists as part of the ELK stack.  On the bright side I have some limited experience with Vector for sending JSON events to an S3 bucket.  Since I'm not in the mood to spend hours looking for anything else I decided to dive deeper into the depths of what Vector offers.
 
 ## The System
 ### Application details
-The application doing the logging is a Java Application in this case using [logback](https://logback.qos.ch/) to write logging events to both stdout and a file.  The stdout messages are pretty basic in their format and are intended to be human-readable.  The log file will be written out to a known location so Vector will be able to tail and process the events which uses the Logstash JSON format proved by [logstash-logback-encoder](https://github.com/logfellow/logstash-logback-encoder)
+The application doing the logging is a Java Application in this case using [logback](https://logback.qos.ch/) to write logging events to both stdout and a file.  The stdout messages are pretty basic in their format and are intended to be human-readable.  Both logback and vector configurations will be injected at runtime allowing for ops to handle how the logging actually works.
 
 ### Deployment
-We're using Kubernetes because that's what all the cool kids use.  The nice thing about K8S is that opens up a lot of possibilities when it comes to how the application runs when it is customer facing. Combine that with some Logback configuration using the [-Dloback.configurationFile](https://logback.qos.ch/manual/configuration.html#configFileProperty) Java System property gives you the ability to alter how logging works when the application is deployed.
+We're using Kubernetes to deploy and manage the application because that's what all the cool kids use and we want to be cool. Right?!  Anyway, when deployed into a customer facing environment the Logback configuration is controlled using [-Dloback.configurationFile](https://logback.qos.ch/manual/configuration.html#configFileProperty) Java System property.
+
+#### Logback
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration>
+<configuration>
+   <property name="LOG_FILE_HOME" value="/var/log/" />
+   <property name="BASE_LOG_FILE_NAME" value="application"/>
+
+   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder>
+         <pattern>%-5level %d{HH:mm:ss.SSS} [%thread] %logger{36} - %msg%n</pattern>
+      </encoder>
+   </appender>
+
+   <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>${LOG_FILE_HOME}/${BASE_LOG_FILE_NAME}.log</file>
+      <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+          <fileNamePattern>${LOG_FILE_HOME}/${BASE_LOG_FILE_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+          <maxFileSize>100MB</maxFileSize>
+          <maxHistory>5</maxHistory>
+          <totalSizeCap>600MB</totalSizeCap>
+      </rollingPolicy>
+      <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+   </appender>
+
+   <root level="trace">
+      <appender-ref ref="STDOUT"/>
+      <appender-ref ref="ROLLING"/>
+   </root>
+</configuration>
+```
+
+#### Deployment Descriptor
+```yaml
+kind: deployment
+```
+
 
 ## Starting Point
 I already had a basic working Vector TOML configuration for writing to an [S3 bucket](https://vector.dev/docs/reference/configuration/sinks/aws_s3/) as well as sending events to stdout. Which looked mostly like:
@@ -62,13 +100,6 @@ key_prefix = "application/"
 Take this example with limited authority other than it can be a starting place.   I wrote it using Localstack, so YMMV using real S3 in AWS.
 
 `raw_message` turns out to not be what I wanted and as I copy pastaing my way through the first setup it took me a while to figure out why I wasn't getting all the data I thought I should be getting.  See [Vector S3 Sink Code](https://vector.dev/docs/reference/configuration/sinks/aws_s3/#encoding.codec) for why it might not be exactly what I wanted.  FYI [Consle Sink](https://vector.dev/docs/reference/configuration/sinks/console/#encoding.codec) works the same way.  (Spoilers: it only sends the `message` property of the event and nothing else).  This is my warning to you to be aware of what `raw_message` is actually doing.
-
-### Deployment
-The basics of the deployment descriptor
-
-```yaml
-kind: deployment
-```
 
 ## Getting a Key
 Log into your Elastic system and generate a new token.  You'll probably want the same permissions that Logstash uses, but that will be different for everyone and this isn't really about setting up that token, more just getting it so you can use it.  Make sure you grab the Base64 encoded API Token when you have generated it.
