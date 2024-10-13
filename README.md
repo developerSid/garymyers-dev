@@ -1,4 +1,5 @@
 # garymyers-dev
+
 My Amazing Blog
 
 ## Local Authoring
@@ -6,4 +7,3 @@ My Amazing Blog
 ```shell
 zola serve
 ```
-

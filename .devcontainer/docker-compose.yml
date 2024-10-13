@@ -1,0 +1,23 @@
+name: garymyers-dev-blog
+networks:
+  garydevnet:
+    name: 
+      garydevnet
+
+services:
+  garymyers-dev:
+    build:
+      dockerfile: Dockerfile
+      args:
+        DOCKER_GID: ${DOCKER_GID:-999}
+    environment:
+      - DOCKER_GID=${DOCKER_GID:-999}
+    container_name: garymyers-dev 
+    hostname: garymyers-dev
+    ports:
+      - 3000:3000
+    networks:
+      - garydevnet
+    stop_signal: SIGKILL
+    command: zola serve --interface 0.0.0.0 --port 3000
+

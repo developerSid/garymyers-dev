@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
+  "name": "Zola Development Container",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "garymyers-dev",
+  "build": {
+    "args": {
+      "DOCKER_GID": "${localEnv:DOCKER_GID}"
+    }
+  },
+  "postStartCommand": "direnv allow /garymyers-dev",
+  "features": {},
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode-remote.remote-containers",
+        "ms-azuretools.vscode-docker" // Optional: Docker extension for managing containers
+      ]
+    }
+  },
+  "remoteUser": "developer",
+  "privileged": true, // Required to run Docker in Docker
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/garymyers-dev,type=bind,consistency=cached",
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind", // Mount Docker socket
+    "source=${localEnv:HOME}/.ssh,target=/home/developer/.ssh,type=bind"
+  ],
+  "runArgs": [
+    "--privileged" // Required to run Docker-in-Docker
+  ]
+}

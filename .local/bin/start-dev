@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -e
+
+cd "${0%/*}" # set a consistent directory to be the location of this script
+cd ../..
+
+export DOCKER_GID=$(getent group docker | cut -d: -f3)
+
+devcontainer up --workspace-folder .
+
+docker exec -it garymyers-dev zsh --login
+

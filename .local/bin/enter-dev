@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -e
+
+cd "${0%/*}" # set a consistent directory to be the location of this script
+cd ../..
+
+export DOCKER_GID=$(getent group docker | cut -d: -f3)
+
+# Define the service name (pass as an argument or hardcode it here)
+SERVICE_NAME="garymyers-dev"  # You can replace $1 with the actual service name if you want to hardcode it
+
+# Get the container ID for the service using docker-compose ps
+CONTAINER_ID=$(docker compose -f .devcontainer/docker-compose.yml ps -q "$SERVICE_NAME")
+
+# Check if the container is running
+if [ -z "$CONTAINER_ID" ]; then
+  devcontainer up --workspace-folder .
+  
+  CONTAINER_ID=$(docker compose -f .devcontainer/docker-compose.yml ps -q "$SERVICE_NAME")
+fi
+
+# Get the status of the container
+echo $(docker inspect --format='{{.State.Status}}' "$CONTAINER_ID")
+CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' "$CONTAINER_ID")
+
+# Check if the service is running (status should be 'running')
+if [ "$CONTAINER_STATUS" == "running" ]; then
+  docker exec -it $SERVICE_NAME zsh --login
+fi
+
